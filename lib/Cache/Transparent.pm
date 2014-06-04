@@ -41,8 +41,8 @@ sub get_multi {
     my %result;
  
     for my $layer ( $self->layers ) {
-        my $rv = $self->get_multi(@remaining_keys);
-         @remaining_keys = grep { !exists $rv->{ $_ }  } (@remaining_keys);
+        my $rv = $layer->get_multi(@remaining_keys);
+         @remaining_keys = grep { !defined $rv->{ $_ }  } (@remaining_keys);
          %result = (%result, %$rv);
     }
     return \%result;
