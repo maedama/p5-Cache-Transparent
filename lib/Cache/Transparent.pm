@@ -49,11 +49,11 @@ sub get_multi {
 }
 
 sub set_multi {
-    my ($self, $args) = @_;
+    my ($self, @args) = @_;
     
     my %result;
     for my $layer ($self->layers) {
-        my $rv = $layer->set_multi($args);
+        my $rv = $layer->set_multi(@args);
         for my $key (keys %$rv) {
             $result{$key} = $result{$key} && $rv->{$key};
         }
@@ -61,8 +61,8 @@ sub set_multi {
 
     if (wantarray) {
         return map {
-            $result{ $args->[0] };
-        } @$args;
+            $result{ $_->[0] };
+        } @args;
     }
     else {
         return \%result;
