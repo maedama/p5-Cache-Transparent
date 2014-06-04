@@ -2,26 +2,30 @@ package Cache::Transparent;
 use 5.008005;
 use strict;
 use warnings;
-use List::MoreUtils qw/first/;
+use List::Util qw/first/;
 our $VERSION = "0.01";
 
 sub new {
     my ($class, %args) = @_;
     my $layers = $args{layers};
 
-    die "need array ref as layer" unless $layers && ref $layers eq 'Array';
+    die "need array ref as layer" unless $layers && ref $layers ne 'Array';
     bless { _layers => $layers } , $class;
 }
 
 
 sub get {
     my ($self, $key) = @_;
-    my $rv = first { defined $_->get($key; } ( $self->layers );
-    return $rv;
+
+    for my $layer ( $self->layers ) {
+        my $rv = $layer->get($key);
+        if (defined $rv) { return $rv; }
+    }
+    return undef;
 }
 
 sub set {
-    my ($self, $value, $key) = @_;
+    my ($self, $key, $value, $expire) = @_;
 
     my $rv;
     for my $layer ($self->layers) {
@@ -32,10 +36,8 @@ sub set {
 
 sub get_multi { 
     my ($self, @keys) = @_;
-
-    my $rv = first { defined $_->get($key; } ( $self->layers );
-    
-    my @ramaining_keys = @keys;
+ 
+    my @remaining_keys = @keys;
     my %result;
  
     for my $layer ( $self->layers ) {
@@ -43,7 +45,7 @@ sub get_multi {
          @remaining_keys = grep { !exists $rv->{ $_ }  } (@remaining_keys);
          %result = (%result, %$rv);
     }
-    return %result;
+    return \%result;
 }
 
 sub set_multi {
@@ -52,8 +54,8 @@ sub set_multi {
     my %result;
     for my $layer ($self->layers) {
         my $rv = $layer->set_multi($args);
-        for my $key keys (%$rv) {
-            $result{$key} = $result->{$key} && $rv->{$key};
+        for my $key (keys %$rv) {
+            $result{$key} = $result{$key} && $rv->{$key};
         }
     }
 
